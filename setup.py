@@ -1,155 +1,44 @@
-import argparse
-import errno
-import glob
-import io
-import logging
 import os
-import re
-import shutil
 import subprocess
-import sys
-import tarfile
-import tempfile
-import zipfile
-import time
-
-from itertools import chain
-from itertools import takewhile
-
-import urllib.error
-import urllib.parse
-import urllib.request
-
-logger = logging.getLogger(__name__)
-
-SUPPORTED_PYTHONS = [(3, 6), (3, 7), (3, 8), (3, 9), (3, 10)]
-SUPPORTED_BAZEL = (3, 2, 0)
-
-ROOT_DIR = os.path.dirname(__file__)
-
-install_requires = []
+from setuptools import setup, Extension
+from setuptools.command.build_ext import build_ext
 
 
-# Calls Bazel in PATH, falling back to the standard user installatation path
-# (~/.bazel/bin/bazel) if it isn't found.
-def bazel_invoke(invoker, cmdline, *args, **kwargs):
-    home = os.path.expanduser("~")
-    first_candidate = os.getenv("BAZEL_PATH", "bazel")
-    candidates = [first_candidate]
-    if sys.platform == "win32":
-        mingw_dir = os.getenv("MINGW_DIR")
-        if mingw_dir:
-            candidates.append(mingw_dir + "/bin/bazel.exe")
-    else:
-        candidates.append(os.path.join(home, ".bazel", "bin", "bazel"))
-    result = None
-    for i, cmd in enumerate(candidates):
-        try:
-            result = invoker([cmd] + cmdline, *args, **kwargs)
-            break
-        except IOError:
-            if i >= len(candidates) - 1:
-                raise
-    return result
+class CMakeBuild(build_ext):
+    def build_extension(self, ext):
+        # 获取构建目录
+        extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
+        cmake_args = [
+            f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}",
+            f"-DPYTHON_EXECUTABLE={self.get_executable_path()}",
+            f"-DGLOO_INCLUDE_DIR=/usr/local/include/gloo"
+        ]
+        build_args = ["--config", "Release"]
+
+        # 创建构建目录
+        if not os.path.exists(self.build_temp):
+            os.makedirs(self.build_temp)
+
+        # 调用 CMake 构建
+        subprocess.check_call(["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp)
+        subprocess.check_call(["cmake", "--build", "."] + build_args, cwd=self.build_temp)
+
+    def get_executable_path(self):
+        return os.path.abspath(os.sys.executable)
 
 
-def move_file(target_dir, filename):
-    source = filename
-    destination = os.path.join(target_dir, filename.split('/')[-1])
-    # Create the target directory if it doesn't already exist.
-    os.makedirs(os.path.dirname(destination), exist_ok=True)
-    if not os.path.exists(destination):
-        print("Copying {} to {}.".format(source, destination))
-        if sys.platform == "win32":
-            # Does not preserve file mode (needed to avoid read-only bit)
-            shutil.copyfile(source, destination, follow_symlinks=True)
-        else:
-            # Preserves file mode (needed to copy executable bit)
-            shutil.copy(source, destination, follow_symlinks=True)
+class CMakeExtension(Extension):
+    def __init__(self, name, sourcedir=""):
+        super().__init__(name, sources=[])
+        self.sourcedir = os.path.abspath(sourcedir)
 
 
-def build():
-    # no support windows
-    if tuple(sys.version_info[:2]) not in SUPPORTED_PYTHONS:
-        msg = ("Detected Python version {}, which is not supported. "
-               "Only Python {} are supported.").format(
-                   ".".join(map(str, sys.version_info[:2])),
-                   ", ".join(".".join(map(str, v)) for v in SUPPORTED_PYTHONS))
-        raise RuntimeError(msg)
-
-    bazel_env = dict(os.environ, PYTHON3_BIN_PATH=sys.executable)
-
-    version_info = bazel_invoke(subprocess.check_output, ["--version"])
-    bazel_version_str = version_info.rstrip().decode("utf-8").split(" ", 1)[1]
-    bazel_version_split = bazel_version_str.split(".")
-    bazel_version_digits = [
-        "".join(takewhile(str.isdigit, s)) for s in bazel_version_split
-    ]
-    bazel_version = tuple(map(int, bazel_version_digits))
-    if bazel_version < SUPPORTED_BAZEL:
-        logger.warning("Expected Bazel version {} but found {}".format(
-            ".".join(map(str, SUPPORTED_BAZEL)), bazel_version_str))
-
-    bazel_targets = ["//pygloo:all"]
-    return bazel_invoke(
-        subprocess.check_call,
-        ["build", "--verbose_failures", "--"] + bazel_targets,
-        env=bazel_env)
-
-
-def pip_run(build_ext):
-    build()
-
-    files_to_include = ["./bazel-bin/pygloo/pygloo.so"]
-
-    for filename in files_to_include:
-        move_file(build_ext.build_lib, filename)
-
-
-
-if __name__ == "__main__":
-    import setuptools
-    import setuptools.command.build_ext
-    from setuptools.command.install import install
-    class build_ext(setuptools.command.build_ext.build_ext):
-        def run(self):
-            return pip_run(self)
-
-    class BinaryDistribution(setuptools.Distribution):
-        def has_ext_modules(self):
-            return True
-
-    class InstallPlatlib(install):
-        def finalize_options(self):
-            install.finalize_options(self)
-            if self.distribution.has_ext_modules():
-                self.install_lib = self.install_platlib
-
-    with open(os.path.join(ROOT_DIR, "README.md"), encoding="utf-8") as f:
-        long_description = f.read()
-
-    setuptools.setup(
-        name="pygloo",
-        version="0.2.0",
-        author="Ray Team",
-        author_email="ray-dev@googlegroups.com",
-        description=("A python binding for gloo"),
-        long_description=long_description,
-        long_description_content_type="text/markdown",
-        url="https://github.com/ray-project/pygloo",
-        classifiers=[
-            'Programming Language :: Python :: 3',
-            'Topic :: Scientific/Engineering :: Artificial Intelligence'
-        ],
-        keywords=("collective communication"),
-        packages=setuptools.find_packages(),
-        cmdclass={"build_ext": build_ext,
-                  "install": InstallPlatlib},
-        # The BinaryDistribution argument triggers build_ext.
-        distclass=BinaryDistribution,
-        install_requires=install_requires,
-        setup_requires=["wheel"],
-        include_package_data=True,
-        zip_safe=False,
-        license="Apache 2.0"
-    )
+setup(
+    name="pygloo",
+    version="0.0.1",
+    author="Your Name",
+    description="A Python package with C++ extension using CMake",
+    ext_modules=[CMakeExtension("pygloo")],
+    cmdclass={"build_ext": CMakeBuild},
+    zip_safe=False,
+)
