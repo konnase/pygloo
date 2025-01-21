@@ -25,6 +25,18 @@
 
 #endif
 
+#if GLOO_HAVE_TRANSPORT_IBVERBS
+
+#include <gloo/transport/ibverbs/address.h>
+#include <gloo/transport/ibverbs/buffer.h>
+#include <gloo/transport/ibverbs/context.h>
+#include <gloo/transport/ibverbs/device.h>
+#include <gloo/transport/ibverbs/memory_region.h>
+#include <gloo/transport/ibverbs/pair.h>
+#include <infiniband/verbs.h>
+
+#endif
+
 #if !GLOO_HAVE_TRANSPORT_UV
 #if !GLOO_HAVE_TRANSPORT_UV
 #include <gloo/transport/address.h>
@@ -35,61 +47,69 @@
 #endif
 #endif
 
-namespace pygloo {
-namespace transport {
-class PyDevice : public gloo::transport::Device {
-public:
-  using gloo::transport::Device::Device;
+namespace pygloo
+{
+  namespace transport
+  {
+    class PyDevice : public gloo::transport::Device
+    {
+    public:
+      using gloo::transport::Device::Device;
 
-  std::string str() const override {
-    PYBIND11_OVERRIDE_PURE(
-        std::string,             /* Return type */
-        gloo::transport::Device, /* Parent class */
-        str, /* Name of function in C++ (must match Python name) */
-             /* Argument(s) */
-    );
-  }
+      std::string str() const override
+      {
+        PYBIND11_OVERRIDE_PURE(
+            std::string,             /* Return type */
+            gloo::transport::Device, /* Parent class */
+            str,                     /* Name of function in C++ (must match Python name) */
+                                     /* Argument(s) */
+        );
+      }
 
-  const std::string &getPCIBusID() const override {
-    PYBIND11_OVERRIDE_PURE(
-        const std::string &,     /* Return type */
-        gloo::transport::Device, /* Parent class */
-        getPCIBusID, /* Name of function in C++ (must match Python name) */
-                     /* Argument(s) */
-    );
-  }
+      const std::string &getPCIBusID() const override
+      {
+        PYBIND11_OVERRIDE_PURE(
+            const std::string &,     /* Return type */
+            gloo::transport::Device, /* Parent class */
+            getPCIBusID,             /* Name of function in C++ (must match Python name) */
+                                     /* Argument(s) */
+        );
+      }
 
-  int getInterfaceSpeed() const override {
-    PYBIND11_OVERRIDE(int,                     /* Return type */
-                      gloo::transport::Device, /* Parent class */
-                      getInterfaceSpeed, /* Name of function in C++ (must match
-                                            Python name) */
-                                         /* Argument(s) */
-    );
-  }
+      int getInterfaceSpeed() const override
+      {
+        PYBIND11_OVERRIDE(int,                     /* Return type */
+                          gloo::transport::Device, /* Parent class */
+                          getInterfaceSpeed,       /* Name of function in C++ (must match
+                                                      Python name) */
+                                                   /* Argument(s) */
+        );
+      }
 
-  bool hasGPUDirect() const override {
-    PYBIND11_OVERRIDE(
-        bool,                    /* Return type */
-        gloo::transport::Device, /* Parent class */
-        hasGPUDirect, /* Name of function in C++ (must match Python name) */
-                      /* Argument(s) */
-    );
-  }
+      bool hasGPUDirect() const override
+      {
+        PYBIND11_OVERRIDE(
+            bool,                    /* Return type */
+            gloo::transport::Device, /* Parent class */
+            hasGPUDirect,            /* Name of function in C++ (must match Python name) */
+                                     /* Argument(s) */
+        );
+      }
 
-  std::shared_ptr<gloo::transport::Context> createContext(int rank,
-                                                          int size) override {
-    PYBIND11_OVERRIDE_PURE(
-        std::shared_ptr<gloo::transport::Context>, /* Return type */
-        gloo::transport::Device,                   /* Parent class */
-        createContext, /* Name of function in C++ (must match Python name) */
-        rank, size     /* Argument(s) */
-    );
-  }
-};
+      std::shared_ptr<gloo::transport::Context> createContext(int rank,
+                                                              int size) override
+      {
+        PYBIND11_OVERRIDE_PURE(
+            std::shared_ptr<gloo::transport::Context>, /* Return type */
+            gloo::transport::Device,                   /* Parent class */
+            createContext,                             /* Name of function in C++ (must match Python name) */
+            rank, size                                 /* Argument(s) */
+        );
+      }
+    };
 
-void def_transport_module(pybind11::module &m);
-void def_transport_tcp_module(pybind11::module &m);
-void def_transport_uv_module(pybind11::module &m);
-} // namespace transport
+    void def_transport_module(pybind11::module &m);
+    void def_transport_tcp_module(pybind11::module &m);
+    void def_transport_uv_module(pybind11::module &m);
+  } // namespace transport
 } // namespace pygloo

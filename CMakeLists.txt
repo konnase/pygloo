@@ -20,7 +20,7 @@ list(APPEND PYGLOO_SRCS
 )
 
 # 定义目标模块
-message(STATUS "pygloo srcs: ${PYGLOO_SRCS}")
+# message(STATUS "pygloo srcs: ${PYGLOO_SRCS}")
 pybind11_add_module(pygloo ${PYGLOO_SRCS})
 
 # 可选：添加 include 路径

@@ -11,7 +11,6 @@ class CMakeBuild(build_ext):
         cmake_args = [
             f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}",
             f"-DPYTHON_EXECUTABLE={self.get_executable_path()}",
-            f"-DGLOO_INCLUDE_DIR=/usr/local/include/gloo"
         ]
         build_args = ["--config", "Release"]
 

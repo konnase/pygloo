@@ -6,16 +6,16 @@ set(PYGLOO_HDRS)
 
 # Compiled sources in root directory
 list(APPEND PYGLOO_SRCS
-  "${CMAKE_CURRENT_SOURCE_DIR}/allgather.cc"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/allgather.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/allreduce.cc"
-  "${CMAKE_CURRENT_SOURCE_DIR}/barrier.cc"
-  "${CMAKE_CURRENT_SOURCE_DIR}/broadcast.cc"
-  "${CMAKE_CURRENT_SOURCE_DIR}/gather.cc"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/barrier.cc"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/broadcast.cc"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/gather.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/recv.cc"
-  "${CMAKE_CURRENT_SOURCE_DIR}/reduce_scatter.cc"
-  "${CMAKE_CURRENT_SOURCE_DIR}/reduce.cc"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/reduce_scatter.cc"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/reduce.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/rendezvous.cc"
-  "${CMAKE_CURRENT_SOURCE_DIR}/scatter.cc"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/scatter.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/send.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/transport.cc"
   )

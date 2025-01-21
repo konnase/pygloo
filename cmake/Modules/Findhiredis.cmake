@@ -26,7 +26,7 @@ find_library(HIREDIS_LIBRARIES
   ${HIREDIS_ROOT_DIR}/lib
   PATH_SUFFIXES hiredis)
 
-message(STATUS "hiredis lib: ${HIREDIS_LIBRARIES}: ${HIREDIS_INCLUDE_DIRS}")
+# message(STATUS "hiredis lib: ${HIREDIS_LIBRARIES}: ${HIREDIS_INCLUDE_DIRS}")
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(hiredis DEFAULT_MSG HIREDIS_INCLUDE_DIRS HIREDIS_LIBRARIES)

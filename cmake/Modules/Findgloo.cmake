@@ -10,8 +10,6 @@
 #  GLOO_INCLUDE_DIRS
 #  GLOO_LIBRARIES
 
-message(STATUS "before find gloo: " ${GLOO_ROOT_DIR} ": " ${GLOO_INCLUDE_DIR} ": " ${GLOO_LIBRARIES})
-
 find_path(GLOO_INCLUDE_DIRS
   NAMES gloo/config.h
   HINTS
@@ -27,6 +25,6 @@ find_library(GLOO_LIBRARIES
   ${GLOO_ROOT_DIR}/lib)
 
 include(FindPackageHandleStandardArgs)
-message(STATUS "after find gloo: " ${GLOO_ROOT_DIR} ": " ${GLOO_INCLUDE_DIR} ": " ${GLOO_LIBRARIES})
+# message(STATUS "after find gloo: " ${GLOO_ROOT_DIR} ": " ${GLOO_INCLUDE_DIR} ": " ${GLOO_LIBRARIES})
 find_package_handle_standard_args(gloo DEFAULT_MSG GLOO_INCLUDE_DIRS GLOO_LIBRARIES)
 mark_as_advanced(GLOO_INCLUDE_DIR GLOO_LIBRARIES)
