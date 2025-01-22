@@ -16,9 +16,13 @@ Install gloo and hiredis first.
 ```bash
 # install gloo
 git clone https://github.com/facebookincubator/gloo.git
+cd gloo
 mkdir -p build
 cd build
-cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DUSE_IBVERBS=1 -DBUILD_BENCHMARK=1 -DUSE_REDIS=1 ../ 
+cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ \
+    -DUSE_IBVERBS=1 -DBUILD_BENCHMARK=1 -DUSE_REDIS=1 \
+    -DBUILD_SHARED_LIBS=1 \
+    ../ 
 make
 make install
 
