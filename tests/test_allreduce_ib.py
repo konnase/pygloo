@@ -7,6 +7,7 @@ import pygloo
 
 world_size = int(os.getenv("WORLD_SIZE", default=1))
 rank = int(os.getenv("RANK", default=0))
+ib_device = os.getenv("IB_DEVICE", default="mlx5_0")
 
 def test_allreduce(rank, world_size, fileStore_path):
     '''
@@ -21,17 +22,17 @@ def test_allreduce(rank, world_size, fileStore_path):
 
     context = pygloo.rendezvous.Context(rank, world_size)
 
-    attr = pygloo.transport.ibverbs.attr("mlx5_0", 1, 1)
+    attr = pygloo.transport.ibverbs.attr(ib_device, 1, 1)
     # Perform rendezvous for TCP pairs
     dev = pygloo.transport.ibverbs.CreateDevice(attr)
 
     fileStore = pygloo.rendezvous.FileStore(fileStore_path)
-    store = pygloo.rendezvous.PrefixStore(str(world_size), fileStore)
 
-    context.connectFullMesh(store, dev)
+    context.connectFullMesh(fileStore, dev)
 
     sendbuf = np.array([[1,2,3],[1,2,3]], dtype=np.float32)
     sendptr = sendbuf.ctypes.data
+    data_size = sendbuf.size if isinstance(sendbuf, np.ndarray) else sendbuf.numpy().size
     print(f"rank {rank} sends {sendbuf}")
 
     # sendbuf = torch.Tensor([[1,2,3],[1,2,3]]).float()
@@ -39,7 +40,6 @@ def test_allreduce(rank, world_size, fileStore_path):
     # sendptr = sendbuf.data_ptr()
     # recvptr = recvbuf.data_ptr()
 
-    data_size = sendbuf.size if isinstance(sendbuf, np.ndarray) else sendbuf.numpy().size
     datatype = pygloo.glooDataType_t.glooFloat32
     pygloo.allreduce_ring(context, sendptr, data_size, datatype)
 

@@ -7,6 +7,7 @@
 // #include <transport.h>
 #include <collective.h>
 #include <rendezvous.h>
+#include <send_recv.h>
 #include <sstream>
 
 namespace pygloo
@@ -141,6 +142,27 @@ PYBIND11_MODULE(pygloo, m)
           .def("setTimeout", &gloo::Context::setTimeout)
           .def("getTimeout", &gloo::Context::getTimeout);
 
+      // pybind11::class_<pygloo::SendRecver<float>, std::shared_ptr<pygloo::SendRecver<float>>>(m, "SendRecverFloat")
+      //     .def(pybind11::init<const std::shared_ptr<gloo::rendezvous::Context> &,
+      //                         intptr_t, intptr_t,
+      //                         const int, const int>(),
+      //          pybind11::arg("context") = nullptr,
+      //          pybind11::arg("sends") = nullptr,
+      //          pybind11::arg("recvs") = nullptr,
+      //          pybind11::arg("size") = 1, pybind11::arg("peer") = 0)
+      //     .def("send", &pygloo::SendRecver<float>::send)
+      //     .def("recv", &pygloo::SendRecver<float>::recv)
+      //     .def("waitSend", &pygloo::SendRecver<float>::waitSend);
+
+      pygloo::bindSendRecver<int8_t>(m, "SendRecverInt8");
+      pygloo::bindSendRecver<uint8_t>(m, "SendRecverUInt8");
+      pygloo::bindSendRecver<int32_t>(m, "SendRecverInt32");
+      pygloo::bindSendRecver<uint32_t>(m, "SendRecverUInt32");
+      pygloo::bindSendRecver<int64_t>(m, "SendRecverInt64");
+      pygloo::bindSendRecver<uint64_t>(m, "SendRecverUInt64");
+      pygloo::bindSendRecver<gloo::float16>(m, "SendRecverFloat16");
+      pygloo::bindSendRecver<float_t>(m, "SendRecverFloat");
+      pygloo::bindSendRecver<double_t>(m, "SendRecverDouble");
       pygloo::transport::def_transport_module(m);
       pygloo::rendezvous::def_rendezvous_module(m);
 }

@@ -72,10 +72,6 @@ namespace pygloo
 
   void context_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context);
 
-  // void pair_send_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
-  //                        intptr_t sendbuf, size_t size, glooDataType_t datatype,
-  //                        int peer);
-
   void allreduce_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
                          intptr_t sendbuf, intptr_t recvbuf, size_t size,
                          glooDataType_t datatype,
@@ -88,45 +84,45 @@ namespace pygloo
                               intptr_t sendbuf, size_t size,
                               glooDataType_t datatype);
 
-  void allgather_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
-                         intptr_t sendbuf, intptr_t recvbuf, size_t size,
-                         glooDataType_t datatype, uint32_t tag = 0);
+  // void allgather_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
+  //                        intptr_t sendbuf, intptr_t recvbuf, size_t size,
+  //                        glooDataType_t datatype, uint32_t tag = 0);
 
-  void allgatherv_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
-                          intptr_t sendbuf, intptr_t recvbuf, size_t size,
-                          glooDataType_t datatype, uint32_t tag = 0);
+  // void allgatherv_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
+  //                         intptr_t sendbuf, intptr_t recvbuf, size_t size,
+  //                         glooDataType_t datatype, uint32_t tag = 0);
 
-  void reduce_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
-                      intptr_t sendbuf, intptr_t recvbuf, size_t size,
-                      glooDataType_t datatype,
-                      ReduceOp reduceop = pygloo::ReduceOp::SUM, int root = 0,
-                      uint32_t tag = 0);
+  // void reduce_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
+  //                     intptr_t sendbuf, intptr_t recvbuf, size_t size,
+  //                     glooDataType_t datatype,
+  //                     ReduceOp reduceop = pygloo::ReduceOp::SUM, int root = 0,
+  //                     uint32_t tag = 0);
 
-  void scatter_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
-                       std::vector<intptr_t> sendbuf, intptr_t recvbuf,
-                       size_t size, glooDataType_t datatype, int root = 0,
-                       uint32_t tag = 0);
+  // void scatter_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
+  //                      std::vector<intptr_t> sendbuf, intptr_t recvbuf,
+  //                      size_t size, glooDataType_t datatype, int root = 0,
+  //                      uint32_t tag = 0);
 
-  void gather_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
-                      intptr_t sendbuf, intptr_t recvbuf, size_t size,
-                      glooDataType_t datatype, int root = 0, uint32_t tag = 0);
+  // void gather_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
+  //                     intptr_t sendbuf, intptr_t recvbuf, size_t size,
+  //                     glooDataType_t datatype, int root = 0, uint32_t tag = 0);
 
-  void send_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
-                    intptr_t sendbuf, size_t size, glooDataType_t datatype,
-                    int peer, uint32_t tag = 0);
+  // void send_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
+  //                   intptr_t sendbuf, size_t size, glooDataType_t datatype,
+  //                   int peer, uint32_t tag = 0);
 
-  void recv_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
-                    intptr_t recvbuf, size_t size, glooDataType_t datatype,
-                    int peer, uint32_t tag = 0);
+  // void recv_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
+  //                   intptr_t recvbuf, size_t size, glooDataType_t datatype,
+  //                   int peer, uint32_t tag = 0);
 
-  void broadcast_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
-                         intptr_t sendbuf, intptr_t recvbuf, size_t size,
-                         glooDataType_t datatype, int root = 0, uint32_t tag = 0);
+  // void broadcast_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
+  //                        intptr_t sendbuf, intptr_t recvbuf, size_t size,
+  //                        glooDataType_t datatype, int root = 0, uint32_t tag = 0);
 
-  void reduce_scatter_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
-                              intptr_t sendbuf, intptr_t recvbuf, size_t size,
-                              std::vector<int> recvElems, glooDataType_t datatype,
-                              ReduceOp reduceop = pygloo::ReduceOp::SUM);
+  // void reduce_scatter_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
+  //                             intptr_t sendbuf, intptr_t recvbuf, size_t size,
+  //                             std::vector<int> recvElems, glooDataType_t datatype,
+  //                             ReduceOp reduceop = pygloo::ReduceOp::SUM);
 
-  void barrier(const std::shared_ptr<gloo::rendezvous::Context> &context, uint32_t tag = 0);
+  // void barrier(const std::shared_ptr<gloo::rendezvous::Context> &context, uint32_t tag = 0);
 } // namespace pygloo
