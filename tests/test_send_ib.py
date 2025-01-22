@@ -32,12 +32,21 @@ def test_allreduce(rank, world_size, fileStore_path):
 
     context.connectFullMesh(fileStore, dev)
 
-    sendbuf = np.array([[1,2,3],[1,2,3]], dtype=np.float32)
-    recvbuf = np.zeros_like(sendbuf, dtype=np.float32)
-    sendptr = sendbuf.ctypes.data
-    recvptr = recvbuf.ctypes.data
+    # sendbuf = np.array([[1,2,3],[1,2,3]], dtype=np.float32)
+    # sendbuf += rank
+    # recvbuf = np.zeros_like(sendbuf, dtype=np.float32)
+    # sendptr = sendbuf.ctypes.data
+    # recvptr = recvbuf.ctypes.data
+    # data_size = sendbuf.size if isinstance(sendbuf, np.ndarray) else sendbuf.numpy().size
+
+    sendbuf = torch.Tensor([[1,2,3],[1,2,3]]).float()
+    sendbuf += rank
+    recvbuf = torch.zeros_like(sendbuf)
+    sendptr = sendbuf.data_ptr()
+    recvptr = recvbuf.data_ptr()
+    data_size = sendbuf.numel()
+
     print(f"rank {rank} sends {sendbuf}")
-    data_size = sendbuf.size if isinstance(sendbuf, np.ndarray) else sendbuf.numpy().size
 
     if rank == 0:
         peer = 1
@@ -49,10 +58,6 @@ def test_allreduce(rank, world_size, fileStore_path):
     sr.recv()
     sr.waitSend()
 
-    # sendbuf = torch.Tensor([[1,2,3],[1,2,3]]).float()
-    # recvbuf = torch.zeros_like(sendbuf)
-    # sendptr = sendbuf.data_ptr()
-    # recvptr = recvbuf.data_ptr()
 
     print(f"rank {rank} receives {recvbuf}")
     ## example output
@@ -60,10 +65,10 @@ def test_allreduce(rank, world_size, fileStore_path):
     # (pid=30445)              [1. 2. 3.]],
     # (pid=30445)     receives [[2. 4. 6.]
     # (pid=30445)              [2. 4. 6.]]
-    # (pid=30446) rank 1 sends [[1. 2. 3.]
-    # (pid=30446)              [1. 2. 3.]],
-    # (pid=30446)     receives [[2. 4. 6.]
+    # (pid=30446) rank 1 sends [[2. 4. 6.]
     # (pid=30446)              [2. 4. 6.]]
+    # (pid=30446)     receives [[1. 2. 3.]
+    # (pid=30446)              [1. 2. 3.]],
 
 if __name__ == "__main__":
     print(f"rank {rank} of world_size {world_size}")
