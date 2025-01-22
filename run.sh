@@ -5,5 +5,6 @@ if [ "$re_install" -eq 1 ]; then
 fi
 
 export LD_LIBRARY_PATH=/usr/local/lib
-torchrun --nproc-per-node=2 tests/test_allreduce_tcp.py
+torchrun --nproc-per-node=2 tests/test_allreduce_ib.py
+# torchrun --nproc-per-node=2 tests/test_allreduce_tcp.py
 # torchrun --nproc-per-node=2 tests/test_context.py

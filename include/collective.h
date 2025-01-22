@@ -72,6 +72,10 @@ namespace pygloo
 
   void context_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context);
 
+  // void pair_send_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
+  //                        intptr_t sendbuf, size_t size, glooDataType_t datatype,
+  //                        int peer);
+
   void allreduce_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
                          intptr_t sendbuf, intptr_t recvbuf, size_t size,
                          glooDataType_t datatype,
@@ -79,6 +83,10 @@ namespace pygloo
                          gloo::AllreduceOptions::Algorithm algorithm =
                              gloo::AllreduceOptions::Algorithm::RING,
                          uint32_t tag = 0);
+
+  void allreduce_ring_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
+                              intptr_t sendbuf, size_t size,
+                              glooDataType_t datatype);
 
   void allgather_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
                          intptr_t sendbuf, intptr_t recvbuf, size_t size,
