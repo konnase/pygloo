@@ -1,6 +1,7 @@
 # pygloo
 
-Pygloo provides Python bindings for [gloo](https://github.com/facebookincubator/gloo).
+Pygloo provides Python bindings for [gloo](https://github.com/facebookincubator/gloo), forked from [Pygloo](https://github.com/ray-project/pygloo),
+and changed the management tools from bazel to cmake.
 It is implemented using [pybind11](https://github.com/pybind/pybind11).
 
 ## Requirements
@@ -12,10 +13,19 @@ Python >= 3.6
 
 ### Prerequisites
 
-Install gloo and hiredis first.
+Install hiredis and ibverbs first. If you don't need ibverbs, just ignore it.
+```bash
+# install hiredis and ibverbs
+sudo apt update
+sudo apt install libibverbs-dev
+sudo apt install -y libhiredis-dev
+```
+
+Then build gloo from source to use ibverbs and redis. 
+If you don't need ibverbs, just remove `-DUSE_IBVERBS=1` from cmake command.
 ```bash
 # install gloo
-git clone https://github.com/facebookincubator/gloo.git
+git clone https://github.com/konnase/gloo.git
 cd gloo
 mkdir -p build
 cd build
@@ -25,9 +35,6 @@ cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ \
     ../ 
 make
 make install
-
-# install hiredis
-sudo apt-get install -y libhiredis-dev
 ```
 
 ### Building from source

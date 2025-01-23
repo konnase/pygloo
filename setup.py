@@ -6,7 +6,7 @@ from setuptools.command.build_ext import build_ext
 
 class CMakeBuild(build_ext):
     def build_extension(self, ext):
-        # 获取构建目录
+        # get build dir
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = [
             f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}",
@@ -14,11 +14,11 @@ class CMakeBuild(build_ext):
         ]
         build_args = ["--config", "Release"]
 
-        # 创建构建目录
+        # create build dir
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
 
-        # 调用 CMake 构建
+        # build with cmake command
         subprocess.check_call(["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp)
         subprocess.check_call(["cmake", "--build", "."] + build_args, cwd=self.build_temp)
 
@@ -35,8 +35,8 @@ class CMakeExtension(Extension):
 setup(
     name="pygloo",
     version="0.0.1",
-    author="Your Name",
-    description="A Python package with C++ extension using CMake",
+    author="konnase123@gmail.com",
+    description="A Python package for gloo",
     ext_modules=[CMakeExtension("pygloo")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
