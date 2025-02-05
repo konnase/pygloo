@@ -1,12 +1,18 @@
 import numpy as np
 import os
-import ray
 import time
 import shutil
 import torch
 import pygloo
 
-@ray.remote(num_cpus=1)
+world_size = int(os.getenv("WORLD_SIZE", default=1))
+rank = int(os.getenv("RANK", default=0))
+use_ib = int(os.getenv("USE_IB", default=1))
+ib_device = os.getenv("IB_DEVICE", default="mlx5_0")
+ip_addr = os.getenv("IP_ADDR", default="localhost")
+file_path = os.getenv("FILE_PATH", default="/mnt/public/liqingping/opensource/gloo/tmp/file_store")
+
+
 def test_allreduce(rank, world_size, fileStore_path):
     '''
     rank  # Rank of this process within list of participating processes
@@ -20,33 +26,36 @@ def test_allreduce(rank, world_size, fileStore_path):
 
     context = pygloo.rendezvous.Context(rank, world_size)
 
-    attr = pygloo.transport.tcp.attr("localhost")
-    # Perform rendezvous for TCP pairs
+    attr = pygloo.transport.tcp.attr(ip_addr)
     dev = pygloo.transport.tcp.CreateDevice(attr)
+    if use_ib == 1:
+        print(f"rank {rank} using ib device {ib_device}")
+        attr = pygloo.transport.ibverbs.attr(ib_device, 1, 1)
+        dev = pygloo.transport.ibverbs.CreateDevice(attr)
 
     fileStore = pygloo.rendezvous.FileStore(fileStore_path)
-    store = pygloo.rendezvous.PrefixStore(str(world_size), fileStore)
 
-    context.connectFullMesh(store, dev)
+    context.connectFullMesh(fileStore, dev)
 
-    sendbuf = np.array([[1,2,3],[1,2,3]], dtype=np.float32)
-    recvbuf = np.zeros_like(sendbuf, dtype=np.float32)
-    sendptr = sendbuf.ctypes.data
-    recvptr = recvbuf.ctypes.data
+    # sendbuf = np.array([[1,2,3],[1,2,3]], dtype=np.float32)
+    # sendbuf += rank
+    # recvbuf = np.zeros_like(sendbuf, dtype=np.float32)
+    # sendptr = sendbuf.ctypes.data
+    # recvptr = recvbuf.ctypes.data
+    # data_size = sendbuf.size if isinstance(sendbuf, np.ndarray) else sendbuf.numpy().size
 
-    # sendbuf = torch.Tensor([[1,2,3],[1,2,3]]).float()
-    # recvbuf = torch.zeros_like(sendbuf)
-    # sendptr = sendbuf.data_ptr()
-    # recvptr = recvbuf.data_ptr()
+    data_count = 3
+    sendbuf = torch.ones(data_count, dtype=torch.float32)
+    sendbuf += rank
+    sendptr = sendbuf.data_ptr()
+    data_size = sendbuf.numel()
 
-    data_size = sendbuf.size if isinstance(sendbuf, np.ndarray) else sendbuf.numpy().size
+    print(f"rank {rank} sends {sendbuf}")
+
     datatype = pygloo.glooDataType_t.glooFloat32
-    op = pygloo.ReduceOp.SUM
-    algorithm = pygloo.allreduceAlgorithm.RING
+    pygloo.allreduce_ring(context, sendptr, data_size, datatype)
 
-    pygloo.allreduce(context, sendptr, recvptr, data_size, datatype, op, algorithm)
-
-    print(f"rank {rank} sends {sendbuf}, receives {recvbuf}")
+    print(f"rank {rank} receives {sendbuf}")
     ## example output
     # (pid=30445) rank 0 sends [[1. 2. 3.]
     # (pid=30445)              [1. 2. 3.]],
@@ -58,9 +67,5 @@ def test_allreduce(rank, world_size, fileStore_path):
     # (pid=30446)              [2. 4. 6.]]
 
 if __name__ == "__main__":
-    ray.init(num_cpus=6)
-    world_size = 2
-    fileStore_path = f"{ray.worker._global_node.get_session_dir_path()}" + "/collective/gloo/rendezvous"
-
-    fns = [test_allreduce.remote(i, world_size, fileStore_path) for i in range(world_size)]
-    ray.get(fns)
+    print(f"rank {rank} of world_size {world_size}")
+    test_allreduce(rank, world_size, "/tmp/pygloo/allreduce_ib")

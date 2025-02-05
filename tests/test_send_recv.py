@@ -1,13 +1,18 @@
-import pygloo
 import numpy as np
 import os
-import ray
 import time
 import shutil
 import torch
+import pygloo
 
-@ray.remote(num_cpus=1)
-def test_send_recv(rank, world_size, fileStore_path):
+world_size = int(os.getenv("WORLD_SIZE", default=1))
+rank = int(os.getenv("RANK", default=0))
+use_ib = bool(os.getenv("USE_IB", default=True))
+ib_device = os.getenv("IB_DEVICE", default="mlx5_0")
+ip_addr = os.getenv("IP_ADDR", default="localhost")
+file_path = os.getenv("FILE_PATH", default="/mnt/public/liqingping/opensource/gloo/tmp/file_store")
+
+def test_allreduce(rank, world_size, fileStore_path):
     '''
     rank  # Rank of this process within list of participating processes
     world_size  # Number of participating processes
@@ -20,50 +25,61 @@ def test_send_recv(rank, world_size, fileStore_path):
 
     context = pygloo.rendezvous.Context(rank, world_size)
 
-    attr = pygloo.transport.tcp.attr("localhost")
-    # Perform rendezvous for TCP pairs
+    attr = pygloo.transport.tcp.attr(ip_addr)
     dev = pygloo.transport.tcp.CreateDevice(attr)
+    if use_ib:
+        attr = pygloo.transport.ibverbs.attr(ib_device, 1, 1)
+        dev = pygloo.transport.ibverbs.CreateDevice(attr)
 
     fileStore = pygloo.rendezvous.FileStore(fileStore_path)
-    store = pygloo.rendezvous.PrefixStore(str(world_size), fileStore)
 
-    context.connectFullMesh(store, dev)
+    context.connectFullMesh(fileStore, dev)
+
+    # sendbuf = np.array([[1,2,3],[1,2,3]], dtype=np.float32)
+    # sendbuf += rank
+    # recvbuf = np.zeros_like(sendbuf, dtype=np.float32)
+    # sendptr = sendbuf.ctypes.data
+    # recvptr = recvbuf.ctypes.data
+    # data_size = sendbuf.size if isinstance(sendbuf, np.ndarray) else sendbuf.numpy().size
+
+    data_count = 134217728 * 2
+    sendbuf = torch.ones(data_count, dtype=torch.float32)
+    sendbuf += rank
+    recvbuf = torch.zeros_like(sendbuf)
+    sendptr = sendbuf.data_ptr()
+    recvptr = recvbuf.data_ptr()
+    data_size = sendbuf.numel()
+
+    print(f"rank {rank} sends {sendbuf}")
 
     if rank == 0:
-        sendbuf = np.array([[1,2,3],[1,2,3]], dtype=np.float32)
-        sendptr = sendbuf.ctypes.data
-
-        # sendbuf = torch.Tensor([[1,2,3],[1,2,3]]).float()
-        # sendptr = sendbuf.data_ptr()
-
-        data_size = sendbuf.size if isinstance(sendbuf, np.ndarray) else sendbuf.numpy().size
-        datatype = pygloo.glooDataType_t.glooFloat32
         peer = 1
-        pygloo.send(context, sendptr, data_size, datatype, peer)
-        print(f"rank {rank} sends {sendbuf}")
-
-    elif rank == 1:
-        recvbuf = np.zeros((2,3), dtype=np.float32)
-        recvptr = recvbuf.ctypes.data
-
-        # recvbuf = torch.zeros(2,3).float()
-        # recvptr = recvbuf.data_ptr()
-
-        data_size = recvbuf.size if isinstance(recvbuf, np.ndarray) else recvbuf.numpy().size
-        datatype = pygloo.glooDataType_t.glooFloat32
-        peer = 0
-
-        pygloo.recv(context, recvptr, data_size, datatype, peer)
-        print(f"rank {rank} receives {recvbuf}")
     else:
-        raise Exception("Only support 2 process to test send function and recv function")
-    ## example output
+        peer = 0
+    
+    sr = pygloo.SendRecverFloat(context, sendptr, recvptr, data_size, peer)
 
+    start = time.time()
+    sr.send()
+    sr.recv()
+    sr.waitSend()
+    print(f"rank {rank} send recv time: {time.time() - start}")
+
+
+    print(f"rank {rank} receives {recvbuf}")
+    ## example output
+    # (pid=30445) rank 0 sends [[1. 2. 3.]
+    # (pid=30445)              [1. 2. 3.]],
+    # (pid=30445)     receives [[2. 4. 6.]
+    # (pid=30445)              [2. 4. 6.]]
+    # (pid=30446) rank 1 sends [[2. 4. 6.]
+    # (pid=30446)              [2. 4. 6.]]
+    # (pid=30446)     receives [[1. 2. 3.]
+    # (pid=30446)              [1. 2. 3.]],
 
 if __name__ == "__main__":
-    ray.init(num_cpus=6)
-    world_size = 2
-    fileStore_path = f"{ray.worker._global_node.get_session_dir_path()}" + "/collective/gloo/rendezvous"
-
-    fns = [test_send_recv.remote(i, world_size, fileStore_path) for i in range(world_size)]
-    ray.get(fns)
+    print(f"rank {rank} of world_size {world_size}")
+    try:
+        test_allreduce(rank, world_size, file_path)
+    except Exception as e:
+        print(f"rank {rank} error {e}")
