@@ -7,12 +7,12 @@ import pygloo
 
 world_size = int(os.getenv("WORLD_SIZE", default=1))
 rank = int(os.getenv("RANK", default=0))
-use_ib = bool(os.getenv("USE_IB", default=True))
+use_ib = int(os.getenv("USE_IB", default=1))
 ib_device = os.getenv("IB_DEVICE", default="mlx5_0")
 ip_addr = os.getenv("IP_ADDR", default="localhost")
 file_path = os.getenv("FILE_PATH", default="/mnt/public/liqingping/opensource/gloo/tmp/file_store")
 
-def test_allreduce(rank, world_size, fileStore_path):
+def test_send_recv(rank, world_size, fileStore_path):
     '''
     rank  # Rank of this process within list of participating processes
     world_size  # Number of participating processes
@@ -27,7 +27,8 @@ def test_allreduce(rank, world_size, fileStore_path):
 
     attr = pygloo.transport.tcp.attr(ip_addr)
     dev = pygloo.transport.tcp.CreateDevice(attr)
-    if use_ib:
+    if use_ib == 1:
+        print(f"rank {rank} using ib device {ib_device}")
         attr = pygloo.transport.ibverbs.attr(ib_device, 1, 1)
         dev = pygloo.transport.ibverbs.CreateDevice(attr)
 
@@ -80,6 +81,6 @@ def test_allreduce(rank, world_size, fileStore_path):
 if __name__ == "__main__":
     print(f"rank {rank} of world_size {world_size}")
     try:
-        test_allreduce(rank, world_size, file_path)
+        test_send_recv(rank, world_size, file_path)
     except Exception as e:
         print(f"rank {rank} error {e}")
