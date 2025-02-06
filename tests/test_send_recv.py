@@ -25,12 +25,10 @@ def test_send_recv(rank, world_size, fileStore_path):
 
     context = pygloo.rendezvous.Context(rank, world_size)
 
-    attr = pygloo.transport.tcp.attr(ip_addr)
-    dev = pygloo.transport.tcp.CreateDevice(attr)
+    attr = pygloo.transport.ibverbs.attr(ib_device, 1, 1) if use_ib == 1 else pygloo.transport.tcp.attr(ip_addr)
+    dev = pygloo.transport.ibverbs.CreateDevice(attr) if use_ib == 1 else pygloo.transport.tcp.CreateDevice(attr)
     if use_ib == 1:
         print(f"rank {rank} using ib device {ib_device}")
-        attr = pygloo.transport.ibverbs.attr(ib_device, 1, 1)
-        dev = pygloo.transport.ibverbs.CreateDevice(attr)
 
     fileStore = pygloo.rendezvous.FileStore(fileStore_path)
 
@@ -65,6 +63,7 @@ def test_send_recv(rank, world_size, fileStore_path):
     sr.recv()
     sr.waitSend()
     print(f"rank {rank} send recv time: {time.time() - start}")
+    del sr # SendRecver is a wrapper of C++ object, so we need to delete it manually
 
 
     print(f"rank {rank} receives {recvbuf}")
