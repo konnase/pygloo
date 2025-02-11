@@ -19,11 +19,7 @@ namespace pygloo
         const int size;
         const int peer;
 
-        ~SendRecver()
-        {
-            delete[] inbox_;
-            delete[] outbox_;
-        }
+        ~SendRecver() {}
         // 禁止拷贝，允许移动（因为 unique_ptr 不可拷贝）
         SendRecver(const SendRecver &) = delete;
         SendRecver &operator=(const SendRecver &) = delete;
@@ -41,9 +37,7 @@ namespace pygloo
               bytes_(sizeof(T) * size),
               debug_(false),
               sends_(reinterpret_cast<T *>(sends)),
-              recvs_(reinterpret_cast<T *>(recvs)),
-              inbox_(new T[size]),
-              outbox_(new T[size])
+              recvs_(reinterpret_cast<T *>(recvs))
         {
             if (debug_)
             {
@@ -61,13 +55,16 @@ namespace pygloo
 
             auto slot = context_->nextSlot();
             auto &pair = context_->getPair(peer);
-            sendBuf = pair->createSendBuffer(slot, outbox_, bytes_);
-            recvBuf = pair->createRecvBuffer(slot, inbox_, bytes_);
+            auto sends_temp = const_cast<T *>(sends_);
+            sendBuf = pair->createSendBuffer(slot, sends_temp, bytes_);
+            recvBuf = pair->createRecvBuffer(slot, recvs_, bytes_);
         }
 
         void setDebug(bool debug)
         {
             debug_ = debug;
+            sendBuf->setDebug(debug);
+            recvBuf->setDebug(debug);
         }
 
         void send()
@@ -75,21 +72,14 @@ namespace pygloo
             if (debug_)
             {
                 std::cout << "Sending " << bytes_ << " bytes" << std::endl;
-                for (int i = 0; i < size; ++i)
-                {
-                    std::cout << sends_[i] << " ";
-                }
-                std::cout << std::endl;
             }
 
-            std::memcpy(outbox_, sends_, bytes_);
             sendBuf->send();
         }
 
         void recv()
         {
             recvBuf->waitRecv();
-            std::memcpy(recvs_, inbox_, bytes_);
         }
 
         void waitSend()
@@ -100,8 +90,6 @@ namespace pygloo
     protected:
         bool debug_;
         const int bytes_;
-        T *inbox_;
-        T *outbox_;
         std::unique_ptr<::gloo::transport::Buffer> sendBuf;
         std::unique_ptr<::gloo::transport::Buffer> recvBuf;
     };

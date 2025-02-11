@@ -41,15 +41,17 @@ def test_send_recv(rank, world_size, fileStore_path):
     # recvptr = recvbuf.ctypes.data
     # data_size = sendbuf.size if isinstance(sendbuf, np.ndarray) else sendbuf.numpy().size
 
-    data_count = 134217728 * 2
-    sendbuf = torch.ones(data_count, dtype=torch.float32)
+    data_count = int(1024**3/4) # 1GB
+    # data_count = data_count * 5
+    # data_count = 3
+    sendbuf = torch.rand(data_count, dtype=torch.float32)
     sendbuf += rank
     recvbuf = torch.zeros_like(sendbuf)
     sendptr = sendbuf.data_ptr()
     recvptr = recvbuf.data_ptr()
     data_size = sendbuf.numel()
 
-    print(f"rank {rank} sends {sendbuf}")
+    print(f"rank {rank} sends {data_size} elements: {sendbuf}")
 
     if rank == 0:
         peer = 1
@@ -57,16 +59,35 @@ def test_send_recv(rank, world_size, fileStore_path):
         peer = 0
     
     sr = pygloo.SendRecverFloat(context, sendptr, recvptr, data_size, peer)
+    # sr.setDebug(1)
 
-    start = time.time()
-    sr.send()
-    sr.recv()
-    sr.waitSend()
-    print(f"rank {rank} send recv time: {time.time() - start}")
+    # both send/recv
+    for _ in range(1):
+        start = time.time()
+        sr.send()
+        # print(f"rank {rank} send time: {time.time() - start}")
+        sr.recv()
+        # print(f"rank {rank} recv time: {time.time() - start}")
+        sr.waitSend()
+        print(f"rank {rank} wait recv time: {time.time() - start}")
+
+    # # rank 0 send, rank 1 recv
+    # start = time.time()
+    # if rank == 0:
+    #     sr.send()
+    #     sr.waitSend()
+    # else:
+    #     sr.recv()
+    # print(f"rank {rank} wait recv time: {time.time() - start}")
+
     del sr # SendRecver is a wrapper of C++ object, so we need to delete it manually
 
 
     print(f"rank {rank} receives {recvbuf}")
+
+    zero_count = torch.sum(recvbuf == 0).item()
+    print(f"元素等于 0 的个数: {zero_count}")
+
     ## example output
     # (pid=30445) rank 0 sends [[1. 2. 3.]
     # (pid=30445)              [1. 2. 3.]],
