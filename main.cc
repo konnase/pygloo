@@ -154,15 +154,26 @@ PYBIND11_MODULE(pygloo, m)
       //     .def("recv", &pygloo::SendRecver<float>::recv)
       //     .def("waitSend", &pygloo::SendRecver<float>::waitSend);
 
-      pygloo::bindSendRecver<int8_t>(m, "SendRecverInt8");
-      pygloo::bindSendRecver<uint8_t>(m, "SendRecverUInt8");
-      pygloo::bindSendRecver<int32_t>(m, "SendRecverInt32");
-      pygloo::bindSendRecver<uint32_t>(m, "SendRecverUInt32");
-      pygloo::bindSendRecver<int64_t>(m, "SendRecverInt64");
-      pygloo::bindSendRecver<uint64_t>(m, "SendRecverUInt64");
-      pygloo::bindSendRecver<gloo::float16>(m, "SendRecverFloat16");
-      pygloo::bindSendRecver<float_t>(m, "SendRecverFloat");
-      pygloo::bindSendRecver<double_t>(m, "SendRecverDouble");
+      pygloo::bindSender<int8_t>(m, "SenderInt8");
+      pygloo::bindSender<uint8_t>(m, "SenderUInt8");
+      pygloo::bindSender<int32_t>(m, "SenderInt32");
+      pygloo::bindSender<uint32_t>(m, "SenderUInt32");
+      pygloo::bindSender<int64_t>(m, "SenderInt64");
+      pygloo::bindSender<uint64_t>(m, "SenderUInt64");
+      pygloo::bindSender<gloo::float16>(m, "SenderFloat16");
+      pygloo::bindSender<float_t>(m, "SenderFloat");
+      pygloo::bindSender<double_t>(m, "SenderDouble");
+
+      pygloo::bindRecver<int8_t>(m, "RecverInt8");
+      pygloo::bindRecver<uint8_t>(m, "RecverUInt8");
+      pygloo::bindRecver<int32_t>(m, "RecverInt32");
+      pygloo::bindRecver<uint32_t>(m, "RecverUInt32");
+      pygloo::bindRecver<int64_t>(m, "RecverInt64");
+      pygloo::bindRecver<uint64_t>(m, "RecverUInt64");
+      pygloo::bindRecver<gloo::float16>(m, "RecverFloat16");
+      pygloo::bindRecver<float_t>(m, "RecverFloat");
+      pygloo::bindRecver<double_t>(m, "RecverDouble");
+
       pygloo::transport::def_transport_module(m);
       pygloo::rendezvous::def_rendezvous_module(m);
 }

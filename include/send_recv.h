@@ -10,25 +10,23 @@ namespace pygloo
 {
 
     template <typename T>
-    class SendRecver
+    class Sender
     {
     public:
         const std::shared_ptr<gloo::Context> &context_;
         const T *sends_;
-        T *recvs_;
         const int size;
         const int peer;
 
-        ~SendRecver() {}
+        ~Sender() {}
         // 禁止拷贝，允许移动（因为 unique_ptr 不可拷贝）
-        SendRecver(const SendRecver &) = delete;
-        SendRecver &operator=(const SendRecver &) = delete;
-        SendRecver(SendRecver &&) = default;
-        SendRecver &operator=(SendRecver &&) = default;
-        SendRecver(
+        Sender(const Sender &) = delete;
+        Sender &operator=(const Sender &) = delete;
+        Sender(Sender &&) = default;
+        Sender &operator=(Sender &&) = default;
+        Sender(
             const std::shared_ptr<gloo::Context> &context,
             intptr_t sends,
-            intptr_t recvs,
             const int size,
             const int peer)
             : context_(context),
@@ -36,12 +34,11 @@ namespace pygloo
               peer(peer),
               bytes_(sizeof(T) * size),
               debug_(false),
-              sends_(reinterpret_cast<T *>(sends)),
-              recvs_(reinterpret_cast<T *>(recvs))
+              sends_(reinterpret_cast<T *>(sends))
         {
             if (debug_)
             {
-                std::cout << "init SendRecver" << std::endl;
+                std::cout << "init Sender" << std::endl;
                 std::cout << "rank: " << context_->rank << " world size: " << context_->size << std::endl;
                 std::cout << "size: " << size << " peer: " << peer << std::endl;
 
@@ -57,14 +54,12 @@ namespace pygloo
             auto &pair = context_->getPair(peer);
             auto sends_temp = const_cast<T *>(sends_);
             sendBuf = pair->createSendBuffer(slot, sends_temp, bytes_);
-            recvBuf = pair->createRecvBuffer(slot, recvs_, bytes_);
         }
 
         void setDebug(bool debug)
         {
             debug_ = debug;
             sendBuf->setDebug(debug);
-            recvBuf->setDebug(debug);
         }
 
         void send()
@@ -77,11 +72,6 @@ namespace pygloo
             sendBuf->send();
         }
 
-        void recv()
-        {
-            recvBuf->waitRecv();
-        }
-
         void waitSend()
         {
             sendBuf->waitSend();
@@ -91,23 +81,85 @@ namespace pygloo
         bool debug_;
         const int bytes_;
         std::unique_ptr<::gloo::transport::Buffer> sendBuf;
+    };
+
+    template <typename T>
+    class Recver
+    {
+    public:
+        const std::shared_ptr<gloo::Context> &context_;
+        T *recvs_;
+        const int size;
+        const int peer;
+
+        ~Recver() {}
+        // 禁止拷贝，允许移动（因为 unique_ptr 不可拷贝）
+        Recver(const Recver &) = delete;
+        Recver &operator=(const Recver &) = delete;
+        Recver(Recver &&) = default;
+        Recver &operator=(Recver &&) = default;
+        Recver(
+            const std::shared_ptr<gloo::Context> &context,
+            intptr_t recvs,
+            const int size,
+            const int peer)
+            : context_(context),
+              size(size),
+              peer(peer),
+              bytes_(sizeof(T) * size),
+              debug_(false),
+              recvs_(reinterpret_cast<T *>(recvs))
+        {
+            auto slot = context_->nextSlot();
+            auto &pair = context_->getPair(peer);
+            recvBuf = pair->createRecvBuffer(slot, recvs_, bytes_);
+        }
+
+        void setDebug(bool debug)
+        {
+            debug_ = debug;
+            recvBuf->setDebug(debug);
+        }
+
+        void recv()
+        {
+            recvBuf->waitRecv();
+        }
+
+    protected:
+        bool debug_;
+        const int bytes_;
         std::unique_ptr<::gloo::transport::Buffer> recvBuf;
     };
 
     template <typename T>
-    void bindSendRecver(pybind11::module &m, const std::string &type_name)
+    void bindSender(pybind11::module &m, const std::string &type_name)
     {
-        using Class = SendRecver<T>;
-        pybind11::class_<Class, std::unique_ptr<Class>>(m, type_name.c_str())
+        using ClassS = Sender<T>;
+        pybind11::class_<ClassS, std::unique_ptr<ClassS>>(m, type_name.c_str())
             .def(pybind11::init<const std::shared_ptr<gloo::rendezvous::Context> &,
-                                intptr_t, intptr_t,
+                                intptr_t,
                                 const int, const int>(),
                  pybind11::arg("context") = nullptr,
-                 pybind11::arg("sends") = nullptr, pybind11::arg("recvs") = nullptr,
+                 pybind11::arg("sends") = nullptr,
                  pybind11::arg("size") = 1, pybind11::arg("peer") = 0)
-            .def("setDebug", &Class::setDebug)
-            .def("send", &Class::send)
-            .def("recv", &Class::recv)
-            .def("waitSend", &Class::waitSend);
+            .def("setDebug", &ClassS::setDebug)
+            .def("send", &ClassS::send)
+            .def("waitSend", &ClassS::waitSend);
+    }
+
+    template <typename T>
+    void bindRecver(pybind11::module &m, const std::string &type_name)
+    {
+        using ClassR = Recver<T>;
+        pybind11::class_<ClassR, std::unique_ptr<ClassR>>(m, type_name.c_str())
+            .def(pybind11::init<const std::shared_ptr<gloo::rendezvous::Context> &,
+                                intptr_t,
+                                const int, const int>(),
+                 pybind11::arg("context") = nullptr,
+                 pybind11::arg("recvs") = nullptr,
+                 pybind11::arg("size") = 1, pybind11::arg("peer") = 0)
+            .def("setDebug", &ClassR::setDebug)
+            .def("recv", &ClassR::recv);
     }
 } // namespace pygloo

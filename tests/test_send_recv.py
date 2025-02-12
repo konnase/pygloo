@@ -44,7 +44,7 @@ def test_send_recv(rank, world_size, fileStore_path):
     data_count = int(1024**3/4) # 1GB
     # data_count = data_count * 5
     # data_count = 3
-    sendbuf = torch.rand(data_count, dtype=torch.float32)
+    sendbuf = torch.ones(data_count, dtype=torch.float32)
     sendbuf += rank
     recvbuf = torch.zeros_like(sendbuf)
     sendptr = sendbuf.data_ptr()
@@ -55,33 +55,48 @@ def test_send_recv(rank, world_size, fileStore_path):
 
     if rank == 0:
         peer = 1
+        sd = pygloo.SenderFloat(context, sendptr, data_size, peer)
     else:
         peer = 0
-    
-    sr = pygloo.SendRecverFloat(context, sendptr, recvptr, data_size, peer)
-    # sr.setDebug(1)
+        rc = pygloo.RecverFloat(context, recvptr, data_size, peer)
 
-    # both send/recv
-    for _ in range(1):
-        start = time.time()
-        sr.send()
-        # print(f"rank {rank} send time: {time.time() - start}")
-        sr.recv()
-        # print(f"rank {rank} recv time: {time.time() - start}")
-        sr.waitSend()
-        print(f"rank {rank} wait recv time: {time.time() - start}")
 
-    # # rank 0 send, rank 1 recv
-    # start = time.time()
-    # if rank == 0:
-    #     sr.send()
-    #     sr.waitSend()
-    # else:
-    #     sr.recv()
-    # print(f"rank {rank} wait recv time: {time.time() - start}")
+    # warmup
+    warmup_iter = 10
+    for i in range(warmup_iter):
+        if rank == 0:
+            sd.send()
+            sd.waitSend()
+        else:
+            rc.recv()
 
-    del sr # SendRecver is a wrapper of C++ object, so we need to delete it manually
+    # 模拟数据变化
+    sendbuf += 10
 
+    # rank 0 send, rank 1 recv
+    start = time.time()
+    last_time = start
+    iter = 10
+    for i in range(iter):
+        if rank == 0:
+            sd.send()
+            sd.waitSend()
+        else:
+            rc.recv()
+        now_time = time.time()
+        elapsed_time = now_time - last_time
+        last_time = now_time
+        print(f"Iter: {i}, time: {elapsed_time:.3f} s")
+    total_time = time.time() - start
+    bw = data_count * 4 * iter / total_time / 1024 / 1024 / 1024
+    print(f"rank {rank} wait recv time: {total_time / iter:.3f} s")
+    print(f"average bandwidth: {bw:.3f} GB/s")
+
+    # release sender and recver
+    if rank == 0:
+        del sd # Sender or Recver is a wrapper of C++ object, so we need to delete it manually
+    else:
+        del rc # Sender or Recver is a wrapper of C++ object, so we need to delete it manually
 
     print(f"rank {rank} receives {recvbuf}")
 
@@ -89,14 +104,23 @@ def test_send_recv(rank, world_size, fileStore_path):
     print(f"元素等于 0 的个数: {zero_count}")
 
     ## example output
-    # (pid=30445) rank 0 sends [[1. 2. 3.]
-    # (pid=30445)              [1. 2. 3.]],
-    # (pid=30445)     receives [[2. 4. 6.]
-    # (pid=30445)              [2. 4. 6.]]
-    # (pid=30446) rank 1 sends [[2. 4. 6.]
-    # (pid=30446)              [2. 4. 6.]]
-    # (pid=30446)     receives [[1. 2. 3.]
-    # (pid=30446)              [1. 2. 3.]],
+    # rank 1 of world_size 2
+    # rank 1 using ib device mlx5_2
+    # Type: St10shared_ptrIN4gloo9transport7ContextEE
+    # rank 1 sends 268435456 elements: tensor([2., 2., 2.,  ..., 2., 2., 2.])
+    # Iter: 0, time: 0.059 s
+    # Iter: 1, time: 0.058 s
+    # Iter: 2, time: 0.058 s
+    # Iter: 3, time: 0.058 s
+    # Iter: 4, time: 0.058 s
+    # Iter: 5, time: 0.058 s
+    # Iter: 6, time: 0.058 s
+    # Iter: 7, time: 0.058 s
+    # Iter: 8, time: 0.058 s
+    # Iter: 9, time: 0.058 s
+    # rank 1 wait recv time: 0.058 s
+    # average bandwidth: 17.299 GB/s
+    # rank 1 receives tensor([11., 11., 11.,  ..., 11., 11., 11.])
 
 if __name__ == "__main__":
     print(f"rank {rank} of world_size {world_size}")
