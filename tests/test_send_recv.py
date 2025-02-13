@@ -5,6 +5,8 @@ import shutil
 import torch
 import pygloo
 
+master_addr = os.getenv('MASTER_ADDR', default="localhost")
+gloo_port = int(os.getenv('GLOO_PORT', default=29700))
 world_size = int(os.getenv("WORLD_SIZE", default=1))
 rank = int(os.getenv("RANK", default=0))
 use_ib = int(os.getenv("USE_IB", default=1))
@@ -30,9 +32,10 @@ def test_send_recv(rank, world_size, fileStore_path):
     if use_ib == 1:
         print(f"rank {rank} using ib device {ib_device}")
 
-    fileStore = pygloo.rendezvous.FileStore(fileStore_path)
+    # store = pygloo.rendezvous.FileStore(fileStore_path)
+    store = pygloo.rendezvous.TCPStore(master_addr, gloo_port, world_size, 1 if rank==0 else 0)
 
-    context.connectFullMesh(fileStore, dev)
+    context.connectFullMesh(store, dev)
 
     # sendbuf = np.array([[1,2,3],[1,2,3]], dtype=np.float32)
     # sendbuf += rank
@@ -97,6 +100,8 @@ def test_send_recv(rank, world_size, fileStore_path):
         del sd # Sender or Recver is a wrapper of C++ object, so we need to delete it manually
     else:
         del rc # Sender or Recver is a wrapper of C++ object, so we need to delete it manually
+    del context
+    del store
 
     print(f"rank {rank} receives {recvbuf}")
 

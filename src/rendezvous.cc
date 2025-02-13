@@ -6,6 +6,7 @@
 #include <gloo/rendezvous/file_store.h>
 #include <gloo/rendezvous/hash_store.h>
 #include <gloo/rendezvous/prefix_store.h>
+#include <gloo/rendezvous/tcp_store.h>
 
 #include <iostream>
 
@@ -67,6 +68,18 @@ namespace pygloo
           .def(pybind11::init<const std::string &, gloo::rendezvous::Store &>())
           .def("set", &gloo::rendezvous::PrefixStore::set)
           .def("get", &gloo::rendezvous::PrefixStore::get);
+
+      pybind11::class_<gloo::rendezvous::TCPStore, gloo::rendezvous::Store,
+                       std::shared_ptr<gloo::rendezvous::TCPStore>>(rendezvous,
+                                                                    "TCPStore")
+          .def(pybind11::init<const std::string &,
+                              int, int,
+                              bool, int>(),
+               pybind11::arg("hostname") = nullptr, pybind11::arg("port") = nullptr,
+               pybind11::arg("world_size") = nullptr, pybind11::arg("is_master") = nullptr,
+               pybind11::arg("timeout") = 30)
+          .def("set", &gloo::rendezvous::TCPStore::set)
+          .def("get", &gloo::rendezvous::TCPStore::get);
 
 #if GLOO_USE_REDIS
       class RedisStoreWithAuth : public gloo::rendezvous::RedisStore
