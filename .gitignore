@@ -140,3 +140,4 @@ bazel-*
 .history
 
 file_store
+tmp
