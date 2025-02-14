@@ -13,12 +13,11 @@ Python >= 3.6
 
 ### Prerequisites
 
-Install hiredis and ibverbs first. If you don't need ibverbs, just ignore it.
+Install ibverbs first. If you don't need ibverbs, just ignore it.
 ```bash
-# install hiredis and ibverbs
+# install and ibverbs
 sudo apt update
 sudo apt install libibverbs-dev
-sudo apt install -y libhiredis-dev
 ```
 
 Then build gloo from source to use ibverbs and redis. 
@@ -30,7 +29,7 @@ cd gloo
 mkdir -p build
 cd build
 cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ \
-    -DUSE_IBVERBS=1 -DBUILD_BENCHMARK=1 -DUSE_REDIS=1 \
+    -DUSE_IBVERBS=1 -DBUILD_BENCHMARK=1 \
     -DBUILD_SHARED_LIBS=1 \
     ../ 
 make
