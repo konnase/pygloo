@@ -9,7 +9,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 find_package(Python REQUIRED COMPONENTS Interpreter Development)
 find_package(pybind11 REQUIRED)
 find_package(gloo REQUIRED)
-find_package(hiredis REQUIRED)
 
 # 包含头文件目录
 include_directories(${CMAKE_SOURCE_DIR}/include)
@@ -25,8 +24,5 @@ pybind11_add_module(pygloo ${PYGLOO_SRCS})
 
 # 可选：添加 include 路径
 target_include_directories(pygloo PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_include_directories(pygloo PRIVATE ${HIREDIS_INCLUDE_DIRS})
 
 target_link_libraries(pygloo PRIVATE gloo)
-target_link_libraries(pygloo PRIVATE hiredis)
-
