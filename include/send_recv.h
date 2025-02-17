@@ -15,7 +15,7 @@ namespace pygloo
     public:
         const std::shared_ptr<gloo::Context> &context_;
         const T *sends_;
-        const int size;
+        const unsigned long size;
         const int peer;
 
         ~Sender() {}
@@ -27,7 +27,7 @@ namespace pygloo
         Sender(
             const std::shared_ptr<gloo::Context> &context,
             intptr_t sends,
-            const int size,
+            const unsigned long size,
             const int peer)
             : context_(context),
               size(size),
@@ -62,14 +62,14 @@ namespace pygloo
             sendBuf->setDebug(debug);
         }
 
-        void send()
+        void send(unsigned long offset, unsigned long length, unsigned long roffset)
         {
             if (debug_)
             {
                 std::cout << "Sending " << bytes_ << " bytes" << std::endl;
             }
 
-            sendBuf->send();
+            sendBuf->send(offset, length, roffset);
         }
 
         void waitSend()
@@ -79,7 +79,7 @@ namespace pygloo
 
     protected:
         bool debug_;
-        const int bytes_;
+        const unsigned long bytes_;
         std::unique_ptr<::gloo::transport::Buffer> sendBuf;
     };
 
@@ -89,7 +89,7 @@ namespace pygloo
     public:
         const std::shared_ptr<gloo::Context> &context_;
         T *recvs_;
-        const int size;
+        const unsigned long size;
         const int peer;
 
         ~Recver() {}
@@ -101,7 +101,7 @@ namespace pygloo
         Recver(
             const std::shared_ptr<gloo::Context> &context,
             intptr_t recvs,
-            const int size,
+            const unsigned long size,
             const int peer)
             : context_(context),
               size(size),
@@ -128,7 +128,7 @@ namespace pygloo
 
     protected:
         bool debug_;
-        const int bytes_;
+        const unsigned long bytes_;
         std::unique_ptr<::gloo::transport::Buffer> recvBuf;
     };
 
@@ -139,7 +139,7 @@ namespace pygloo
         pybind11::class_<ClassS, std::unique_ptr<ClassS>>(m, type_name.c_str())
             .def(pybind11::init<const std::shared_ptr<gloo::rendezvous::Context> &,
                                 intptr_t,
-                                const int, const int>(),
+                                const unsigned long, const int>(),
                  pybind11::arg("context") = nullptr,
                  pybind11::arg("sends") = nullptr,
                  pybind11::arg("size") = 1, pybind11::arg("peer") = 0)
@@ -155,7 +155,7 @@ namespace pygloo
         pybind11::class_<ClassR, std::unique_ptr<ClassR>>(m, type_name.c_str())
             .def(pybind11::init<const std::shared_ptr<gloo::rendezvous::Context> &,
                                 intptr_t,
-                                const int, const int>(),
+                                const unsigned long, const int>(),
                  pybind11::arg("context") = nullptr,
                  pybind11::arg("recvs") = nullptr,
                  pybind11::arg("size") = 1, pybind11::arg("peer") = 0)
