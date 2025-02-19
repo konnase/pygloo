@@ -68,7 +68,7 @@ def test_send_recv(rank, world_size, fileStore_path):
     warmup_iter = 10
     for i in range(warmup_iter):
         if rank == 0:
-            sd.send()
+            sd.send(0, 2 ** 20, 0)
             sd.waitSend()
         else:
             rc.recv()
@@ -82,7 +82,7 @@ def test_send_recv(rank, world_size, fileStore_path):
     iter = 10
     for i in range(iter):
         if rank == 0:
-            sd.send()
+            sd.send(0, 2 ** 20, 0)
             sd.waitSend()
         else:
             rc.recv()
