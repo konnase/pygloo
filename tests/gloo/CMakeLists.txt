@@ -14,3 +14,6 @@ add_executable(tcp_store "${CMAKE_CURRENT_SOURCE_DIR}/test_tcp_store.cpp")
 target_link_libraries(tcp_store gloo)
 
 add_executable(type_test "${CMAKE_CURRENT_SOURCE_DIR}/test_type.cpp")
+
+add_executable(ib_check "${CMAKE_CURRENT_SOURCE_DIR}/test_ib_device.cpp")
+target_link_libraries(ib_check ibverbs)

@@ -1,5 +1,7 @@
 #include <chrono>
 #include <transport.h>
+#include <infiniband/verbs.h>
+#include <iostream>
 
 namespace pygloo
 {
@@ -95,6 +97,7 @@ namespace pygloo
       pybind11::module ibverbs = m.def_submodule("ibverbs", "This is a ibverbs module");
 
       ibverbs.def("CreateDevice", &gloo::transport::ibverbs::CreateDevice);
+      ibverbs.def("is_available", &check_ib_available);
 
       pybind11::class_<gloo::transport::ibverbs::attr>(ibverbs, "attr")
           .def(pybind11::init<>())
@@ -117,6 +120,19 @@ namespace pygloo
                        std::shared_ptr<gloo::transport::ibverbs::Device>,
                        gloo::transport::Device>(ibverbs, "Device")
           .def(pybind11::init<const struct gloo::transport::ibverbs::attr &, ibv_context *>());
+    }
+
+    bool check_ib_available()
+    {
+      // get ib device list
+      ibv_device **devices = ibv_get_device_list(nullptr);
+      if (devices == nullptr)
+      {
+        return false;
+      }
+      ibv_free_device_list(devices);
+
+      return true;
     }
 #else
     void def_transport_ibverbs_module(pybind11::module &m)
