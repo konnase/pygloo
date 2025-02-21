@@ -11,7 +11,6 @@ world_size = int(os.getenv("WORLD_SIZE", default=1))
 rank = int(os.getenv("RANK", default=0))
 use_ib = int(os.getenv("USE_IB", default=1))
 ib_device = os.getenv("IB_DEVICE", default="mlx5_0")
-ip_addr = os.getenv("IP_ADDR", default="localhost")
 file_path = os.getenv("FILE_PATH", default="/mnt/public/liqingping/opensource/gloo/tmp/file_store")
 
 def test_send_recv(rank, world_size, fileStore_path):
@@ -27,7 +26,7 @@ def test_send_recv(rank, world_size, fileStore_path):
 
     context = pygloo.rendezvous.Context(rank, world_size)
 
-    attr = pygloo.transport.ibverbs.attr(ib_device, 1, 1) if use_ib == 1 else pygloo.transport.tcp.attr(ip_addr)
+    attr = pygloo.transport.ibverbs.attr(ib_device, 1, 1) if use_ib == 1 else pygloo.transport.tcp.attr(master_addr)
     dev = pygloo.transport.ibverbs.CreateDevice(attr) if use_ib == 1 else pygloo.transport.tcp.CreateDevice(attr)
     if use_ib == 1:
         print(f"rank {rank} using ib device {ib_device}")
@@ -68,7 +67,7 @@ def test_send_recv(rank, world_size, fileStore_path):
     warmup_iter = 10
     for i in range(warmup_iter):
         if rank == 0:
-            sd.send(0, 2 ** 20, 0)
+            sd.send(0, data_count*4, 0)
             sd.waitSend()
         else:
             rc.recv()
@@ -82,7 +81,7 @@ def test_send_recv(rank, world_size, fileStore_path):
     iter = 10
     for i in range(iter):
         if rank == 0:
-            sd.send(0, 2 ** 20, 0)
+            sd.send(0, data_count*4, 0)
             sd.waitSend()
         else:
             rc.recv()

@@ -1,6 +1,7 @@
 #include <chrono>
 #include <transport.h>
 #include <infiniband/verbs.h>
+#include <sys/stat.h>
 #include <iostream>
 
 namespace pygloo
@@ -124,15 +125,42 @@ namespace pygloo
 
     bool check_ib_available()
     {
-      // get ib device list
-      ibv_device **devices = ibv_get_device_list(nullptr);
-      if (devices == nullptr)
+      // check /dev/infiniband exists
+      struct stat st;
+      if (stat("/dev/infiniband", &st) != 0 || !S_ISDIR(st.st_mode))
       {
         return false;
       }
-      ibv_free_device_list(devices);
 
-      return true;
+      // check device list
+      ibv_device **dev_list = ibv_get_device_list(nullptr);
+      if (!dev_list)
+      {
+        return false;
+      }
+
+      bool available = false;
+      for (int i = 0; dev_list[i]; ++i)
+      {
+        ibv_context *ctx = ibv_open_device(dev_list[i]);
+        if (!ctx)
+        {
+          continue;
+        }
+
+        // 可选：进一步验证设备属性
+        ibv_device_attr attr;
+        if (ibv_query_device(ctx, &attr) == 0)
+        {
+          available = true;
+          ibv_close_device(ctx);
+          break;
+        }
+        ibv_close_device(ctx);
+      }
+
+      ibv_free_device_list(dev_list);
+      return available;
     }
 #else
     void def_transport_ibverbs_module(pybind11::module &m)
