@@ -12,5 +12,5 @@ torchrun --nproc-per-node=2 tests/test_send_recv.py
 
 
 # run independently on 2 nodes
-# rank 0: MASTER_ADDR=jo-daspjlbtqjbdh3jl-worker-0 GLOO_PORT=29500 RANK=0 WORLD_SIZE=2 IB_DEVICE=mlx5_2 IP_ADDR=10.10.10.2 LD_LIBRARY_PATH=/usr/local/lib python test_send_recv.py
-# rank 1: MASTER_ADDR=jo-daspjlbtqjbdh3jl-worker-0 GLOO_PORT=29500 RANK=1 WORLD_SIZE=2 IB_DEVICE=mlx5_2 IP_ADDR=10.10.10.2 LD_LIBRARY_PATH=/usr/local/lib python test_send_recv.py
+# rank 0: MASTER_ADDR=is-c73fflv6ep27coxk-devmachine-0 GLOO_PORT=29500 RANK=0 WORLD_SIZE=2 IB_DEVICE=mlx5_2 LD_LIBRARY_PATH=/usr/local/lib:/mnt/public/liqingping/opensource/gloo/build/gloo python tests/test_send_recv.py
+# rank 1: MASTER_ADDR=is-c73fflv6ep27coxk-devmachine-0 GLOO_PORT=29500 RANK=1 WORLD_SIZE=2 IB_DEVICE=mlx5_2 LD_LIBRARY_PATH=/usr/local/lib:/mnt/public/liqingping/opensource/gloo/build/gloo python tests/test_send_recv.py

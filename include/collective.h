@@ -107,13 +107,13 @@ namespace pygloo
   //                     intptr_t sendbuf, intptr_t recvbuf, size_t size,
   //                     glooDataType_t datatype, int root = 0, uint32_t tag = 0);
 
-  // void send_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
-  //                   intptr_t sendbuf, size_t size, glooDataType_t datatype,
-  //                   int peer, uint32_t tag = 0);
+  void send_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
+                    intptr_t sendbuf, size_t size, glooDataType_t datatype,
+                    int peer, uint32_t tag = 0);
 
-  // void recv_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
-  //                   intptr_t recvbuf, size_t size, glooDataType_t datatype,
-  //                   int peer, uint32_t tag = 0);
+  void recv_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
+                    intptr_t recvbuf, size_t size, glooDataType_t datatype,
+                    int peer, uint32_t tag = 0);
 
   // void broadcast_wrapper(const std::shared_ptr<gloo::rendezvous::Context> &context,
   //                        intptr_t sendbuf, intptr_t recvbuf, size_t size,

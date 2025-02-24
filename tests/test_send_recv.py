@@ -11,7 +11,7 @@ world_size = int(os.getenv("WORLD_SIZE", default=1))
 rank = int(os.getenv("RANK", default=0))
 use_ib = int(os.getenv("USE_IB", default=1))
 ib_device = os.getenv("IB_DEVICE", default="mlx5_0")
-file_path = os.getenv("FILE_PATH", default="/mnt/public/liqingping/opensource/gloo/tmp/file_store")
+file_path = os.getenv("FILE_PATH", default="/mnt/public/liqingping/tests/dlckpt_file_store")
 
 def test_send_recv(rank, world_size, fileStore_path):
     '''
@@ -26,13 +26,15 @@ def test_send_recv(rank, world_size, fileStore_path):
 
     context = pygloo.rendezvous.Context(rank, world_size)
 
-    attr = pygloo.transport.ibverbs.attr(ib_device, 1, 1) if use_ib == 1 else pygloo.transport.tcp.attr(master_addr)
+    hostname = os.getenv("HOSTNAME", default="localhost")
+    attr = pygloo.transport.ibverbs.attr(ib_device, 1, 1) if use_ib == 1 else pygloo.transport.tcp.attr(hostname)
     dev = pygloo.transport.ibverbs.CreateDevice(attr) if use_ib == 1 else pygloo.transport.tcp.CreateDevice(attr)
     if use_ib == 1:
         print(f"rank {rank} using ib device {ib_device}")
 
-    # store = pygloo.rendezvous.FileStore(fileStore_path)
-    store = pygloo.rendezvous.TCPStore(master_addr, gloo_port, world_size, 1 if rank==0 else 0)
+    tmp_store = pygloo.rendezvous.FileStore(fileStore_path)
+    # tmp_store = pygloo.rendezvous.TCPStore(master_addr, gloo_port, world_size, 1 if rank==0 else 0)
+    store = pygloo.rendezvous.PrefixStore(str(world_size), tmp_store)
 
     context.connectFullMesh(store, dev)
 
