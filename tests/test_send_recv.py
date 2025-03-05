@@ -13,15 +13,15 @@ use_ib = int(os.getenv("USE_IB", default=1))
 ib_device = os.getenv("IB_DEVICE", default="mlx5_0")
 file_path = os.getenv("FILE_PATH", default="/mnt/public/liqingping/tests/dlckpt_file_store")
 
-def test_send_recv(rank, world_size, fileStore_path):
+def test_send_recv():
     '''
     rank  # Rank of this process within list of participating processes
     world_size  # Number of participating processes
     '''
     if rank==0:
-        if os.path.exists(fileStore_path):
-            shutil.rmtree(fileStore_path)
-        os.makedirs(fileStore_path)
+        if os.path.exists(file_path):
+            shutil.rmtree(file_path)
+        os.makedirs(file_path)
     else: time.sleep(0.5)
 
     context = pygloo.rendezvous.Context(rank, world_size)
@@ -32,7 +32,7 @@ def test_send_recv(rank, world_size, fileStore_path):
     if use_ib == 1:
         print(f"rank {rank} using ib device {ib_device}")
 
-    tmp_store = pygloo.rendezvous.FileStore(fileStore_path)
+    tmp_store = pygloo.rendezvous.FileStore(file_path)
     # tmp_store = pygloo.rendezvous.TCPStore(master_addr, gloo_port, world_size, 1 if rank==0 else 0)
     store = pygloo.rendezvous.PrefixStore(str(world_size), tmp_store)
 
@@ -45,10 +45,13 @@ def test_send_recv(rank, world_size, fileStore_path):
     # recvptr = recvbuf.ctypes.data
     # data_size = sendbuf.size if isinstance(sendbuf, np.ndarray) else sendbuf.numpy().size
 
-    data_count = int(1024**3/4) # 1GB
-    # data_count = data_count * 5
-    # data_count = 3
+    buffer_size = int(1024**3/4) # 1GB
+    # buffer_size = int(3)
+    num_buffers = 1
+    data_count = buffer_size * num_buffers
     sendbuf = torch.ones(data_count, dtype=torch.float32)
+    for i in range(num_buffers):
+        sendbuf[i*buffer_size:(i+1)*buffer_size] += i
     sendbuf += rank
     recvbuf = torch.zeros_like(sendbuf)
     sendptr = sendbuf.data_ptr()
@@ -57,22 +60,34 @@ def test_send_recv(rank, world_size, fileStore_path):
 
     print(f"rank {rank} sends {data_size} elements: {sendbuf}")
 
+    slot = context.nextSlot(1)
+    print(f"slot: {slot}")
     if rank == 0:
         peer = 1
-        sd = pygloo.SenderFloat(context, sendptr, data_size, peer)
+        start_time = time.time()
+        sd = pygloo.SenderFloat(context, sendptr, slot, data_size, peer)
+        print(f"create SenderFloat time: {time.time() - start_time:.3f} s")
+
+        # rc = pygloo.RecverFloat(context, recvptr, slot, data_size, peer)
     else:
         peer = 0
-        rc = pygloo.RecverFloat(context, recvptr, data_size, peer)
+        start_time = time.time()
+        rc = pygloo.RecverFloat(context, recvptr, slot, data_size, peer)
+        print(f"create RecverFloat time: {time.time() - start_time:.3f} s")
+
+        # sd = pygloo.SenderFloat(context, sendptr, slot, data_size, peer)
 
 
-    # warmup
-    warmup_iter = 10
-    for i in range(warmup_iter):
-        if rank == 0:
-            sd.send(0, data_count*4, 0)
-            sd.waitSend()
-        else:
-            rc.recv()
+
+    # # warmup
+    # warmup_iter = 10
+    # for i in range(warmup_iter):
+    #     for j in range(0, num_buffers, 1):
+    #         if rank == 0:
+    #             sd.send(j*buffer_size*4, buffer_size*4, j*buffer_size*4) # (local_offset, size, remote_offset)
+    #             sd.waitSend()
+    #         else:
+    #             rc.recv()
 
     # 模拟数据变化
     sendbuf += 10
@@ -82,11 +97,12 @@ def test_send_recv(rank, world_size, fileStore_path):
     last_time = start
     iter = 10
     for i in range(iter):
-        if rank == 0:
-            sd.send(0, data_count*4, 0)
-            sd.waitSend()
-        else:
-            rc.recv()
+        for j in range(0, num_buffers, 1):
+            if rank == 0:
+                sd.send(j*buffer_size*4, buffer_size*4, j*buffer_size*4) # (local_offset, size, remote_offset)
+                sd.waitSend()
+            else:
+                rc.recv()
         now_time = time.time()
         elapsed_time = now_time - last_time
         last_time = now_time
@@ -97,10 +113,12 @@ def test_send_recv(rank, world_size, fileStore_path):
     print(f"average bandwidth: {bw:.3f} GB/s")
 
     # release sender and recver
-    if rank == 0:
-        del sd # Sender or Recver is a wrapper of C++ object, so we need to delete it manually
-    else:
-        del rc # Sender or Recver is a wrapper of C++ object, so we need to delete it manually
+    del sd
+    del rc
+    # if rank == 0:
+    #     del sd # Sender or Recver is a wrapper of C++ object, so we need to delete it manually
+    # else:
+    #     del rc # Sender or Recver is a wrapper of C++ object, so we need to delete it manually
     del context
     del store
 
@@ -131,6 +149,6 @@ def test_send_recv(rank, world_size, fileStore_path):
 if __name__ == "__main__":
     print(f"rank {rank} of world_size {world_size}")
     try:
-        test_send_recv(rank, world_size, file_path)
+        test_send_recv()
     except Exception as e:
         print(f"rank {rank} error {e}")

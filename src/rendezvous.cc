@@ -39,6 +39,7 @@ namespace pygloo
           .def_readonly("rank", &gloo::rendezvous::Context::rank)
           .def_readonly("size", &gloo::rendezvous::Context::size)
           .def_readwrite("base", &gloo::rendezvous::Context::base)
+          .def("nextSlot", &gloo::Context::nextSlot)
           .def("connectFullMesh", &gloo::rendezvous::Context::connectFullMesh);
 
       pybind11::class_<gloo::rendezvous::Store,

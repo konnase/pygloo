@@ -27,9 +27,11 @@ namespace pygloo
         Sender(
             const std::shared_ptr<gloo::Context> &context,
             intptr_t sends,
+            int slot,
             const unsigned long size,
             const int peer)
             : context_(context),
+              slot_(slot),
               size(size),
               peer(peer),
               bytes_(sizeof(T) * size),
@@ -50,10 +52,13 @@ namespace pygloo
                 std::cout << std::endl;
             }
 
-            auto slot = context_->nextSlot();
             auto &pair = context_->getPair(peer);
             auto sends_temp = const_cast<T *>(sends_);
-            sendBuf = pair->createSendBuffer(slot, sends_temp, bytes_);
+            auto start_time = std::chrono::high_resolution_clock::now();
+            sendBuf = pair->createSendBuffer(slot_, sends_temp, bytes_);
+            auto end_time = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+            std::cout << "createSendBuffer duration: " << duration.count() << " microseconds" << std::endl;
         }
 
         void setDebug(bool debug)
@@ -78,6 +83,7 @@ namespace pygloo
         }
 
     protected:
+        int slot_;
         bool debug_;
         const unsigned long bytes_;
         std::unique_ptr<::gloo::transport::Buffer> sendBuf;
@@ -101,18 +107,19 @@ namespace pygloo
         Recver(
             const std::shared_ptr<gloo::Context> &context,
             intptr_t recvs,
+            int slot,
             const unsigned long size,
             const int peer)
             : context_(context),
+              slot_(slot),
               size(size),
               peer(peer),
               bytes_(sizeof(T) * size),
               debug_(false),
               recvs_(reinterpret_cast<T *>(recvs))
         {
-            auto slot = context_->nextSlot();
             auto &pair = context_->getPair(peer);
-            recvBuf = pair->createRecvBuffer(slot, recvs_, bytes_);
+            recvBuf = pair->createRecvBuffer(slot_, recvs_, bytes_);
         }
 
         void setDebug(bool debug)
@@ -127,6 +134,7 @@ namespace pygloo
         }
 
     protected:
+        int slot_;
         bool debug_;
         const unsigned long bytes_;
         std::unique_ptr<::gloo::transport::Buffer> recvBuf;
@@ -139,9 +147,11 @@ namespace pygloo
         pybind11::class_<ClassS, std::unique_ptr<ClassS>>(m, type_name.c_str())
             .def(pybind11::init<const std::shared_ptr<gloo::rendezvous::Context> &,
                                 intptr_t,
+                                int,
                                 const unsigned long, const int>(),
                  pybind11::arg("context") = nullptr,
                  pybind11::arg("sends") = nullptr,
+                 pybind11::arg("slot") = nullptr,
                  pybind11::arg("size") = 1, pybind11::arg("peer") = 0)
             .def("setDebug", &ClassS::setDebug)
             .def("send", &ClassS::send)
@@ -155,9 +165,11 @@ namespace pygloo
         pybind11::class_<ClassR, std::unique_ptr<ClassR>>(m, type_name.c_str())
             .def(pybind11::init<const std::shared_ptr<gloo::rendezvous::Context> &,
                                 intptr_t,
+                                int,
                                 const unsigned long, const int>(),
                  pybind11::arg("context") = nullptr,
                  pybind11::arg("recvs") = nullptr,
+                 pybind11::arg("slot") = nullptr,
                  pybind11::arg("size") = 1, pybind11::arg("peer") = 0)
             .def("setDebug", &ClassR::setDebug)
             .def("recv", &ClassR::recv);
