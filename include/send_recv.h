@@ -58,7 +58,7 @@ namespace pygloo
             sendBuf = pair->createSendBuffer(slot_, sends_temp, bytes_);
             auto end_time = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-            std::cout << "createSendBuffer duration: " << duration.count() << " microseconds" << std::endl;
+            // std::cout << "createSendBuffer duration: " << duration.count() << " microseconds" << std::endl;
         }
 
         void setDebug(bool debug)
